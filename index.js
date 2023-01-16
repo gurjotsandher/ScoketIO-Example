@@ -30,6 +30,7 @@ io.on('connection', (socket) => {
         socket["nickname"] = this.nickname
 
         // TODO: Why is IO used here instead of socket?
+        // Look at the info.txt file.
         io.emit('online users', online_users) 
 
         // that socket can broadcast and emit a listening event
