@@ -1,0 +1,108 @@
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+
+      #p {position:fixed; bottom: 0; left: 0; right: 0; display: flex; margin: 0.25rem; }
+    </style>
+  </head>
+  <body>
+    <p id="online-users"></p>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+    <div id="p"></div>
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // var nickname = 'John';
+
+        var nickname;
+        var user = {}
+        while(!nickname){
+            nickname = prompt("What's your name?")
+        }
+        var socket = io();
+        user["nickname"] = nickname
+        socket.emit('nickname', nickname);
+        
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+        var messages = document.getElementById('messages');
+        var p = document.getElementById('p')
+        var online_users = document.getElementById("online-users")
+
+        input.addEventListener('keypress', function(e){
+          console.log(e.target.value)
+          user["isTyping"] = true
+          socket.emit('isTyping', user)
+
+        })
+
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          if(input.value) {
+            console.log(input.value)
+           
+            // Here I am appending the submitted value to the DOM
+            var item = document.createElement('li');
+            item.textContent = input.value
+            messages.appendChild(item)
+            window.scrollTo(0, document.body.scrollHeight)
+
+            // I email the message to the server
+            // This way the message can still be logged within the server
+            // If we want to obtain a history
+            socket.emit('chat message', input.value);
+            input.value = '';
+          }
+        })
+
+        socket.on("arrived", (msg) => {
+          var item = document.createElement('li');
+            item.textContent = msg
+            messages.appendChild(item)
+            window.scrollTo(0, document.body.scrollHeight)
+        })
+
+        socket.on('chat message', function(msg) {
+            var item = document.createElement('li');
+            item.textContent = msg
+            console.log('appended item' + item)
+            messages.appendChild(item)
+            window.scrollTo(0, document.body.scrollHeight)
+        });
+
+        socket.on("isTyping", function(msg){
+          console.log(msg)
+          p.innerHTML = msg
+
+          setTimeout(() => {
+            p.innerHTML = ''
+          }, 3000)
+        })
+
+        // This allows us to see how many users are online
+        // You cannot pass an array as an emitted value
+        // This is why I used an object and then turned it into
+        // a list.
+        socket.on("online users", function(users){
+          online_users.innerHTML = ''
+          list = Object.keys(users)
+          for(let user in users){
+            online_users.innerHTML += user + "<br/>"
+          }
+        })
+    </script>
+</html>
